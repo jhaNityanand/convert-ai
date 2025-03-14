@@ -1,0 +1,1 @@
+[2023-03-25 05:23:23] SMTP connect() failed. https://github.com/PHPMailer/PHPMailer/wiki/Troubleshooting

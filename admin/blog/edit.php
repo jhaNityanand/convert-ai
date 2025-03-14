@@ -1,0 +1,444 @@
+
+<?php
+    require_once('../layouts/config.php');
+    require_once('../layouts/function.php');
+    require_once('../layouts/header.php');
+
+
+    if(isset($_REQUEST['e_id']) && !empty($_REQUEST['e_id'])) {
+        $conditions = ['id' => $_REQUEST['e_id']];
+        $return = single_row('`blog`', $conditions, $conn);
+
+        if(!empty($return['id'])) {
+
+            if($_SESSION['user_login_detail']['id'] != $return['created_by'])
+            {
+                $message = "<div class='alert alert-danger reload'>You Don't have Permission to Access.</div>";
+            }
+            // $message = "<div class='alert alert-success'>Record Get Successfully.</div>";
+        } 
+        else if(empty($return['id'])) {
+            $message = "<div class='alert alert-danger reload'>Record not Found.</div>";
+        }
+        else {
+            $message = "<div class='alert alert-danger'>Something Went Wrong.<br>".$return['error']."</div>";
+        }
+    } else {
+        header("Location: ".base_url."admin/convert");
+    }
+
+    if(isset($_REQUEST['submit']))
+    {
+        if(empty($_REQUEST['title'])) {
+            $title = "Title Field is Required.";
+        }
+        if(empty($_FILES['image'])) {
+            $image = "Image Field is Required.";
+        }
+        if(empty($_REQUEST['author'])) {
+            $author = "Author Field is Required.";
+        }
+        if(empty($_REQUEST['quote'])) {
+            $quote = "Quote Field is Required.";
+        }
+        if(empty($_REQUEST['category'])) {
+            $category = "Category Field is Required.";
+        }
+        if(empty($_REQUEST['content'])) {
+            $content = "Content Field is Required.";
+        }
+        if(empty($_REQUEST['meta_title'])) {
+            $meta_title = "Meta Title Field is Required.";
+        }
+        if(empty($_REQUEST['meta_author'])) {
+            $meta_author = "Meta Author Field is Required.";
+        }
+        if(empty($_REQUEST['meta_description'])) {
+            $meta_description = "Meta Description Field is Required.";
+        }
+        if(empty($_REQUEST['key_words'])) {
+            $key_words = "Key Words Field is Required.";
+        }
+        if(empty($_REQUEST['url'])) {
+            $url = "URL Field is Required.";
+        }
+
+        if(!empty($_FILES['image']['name']))
+        {
+            $filename = $_FILES["image"]["name"];
+            $filetype = $_FILES["image"]["type"];
+            $filetemp = $_FILES["image"]["tmp_name"];
+
+            if(in_array('image', explode('/', $filetype))) {
+                // $path = 'assets/img/blog/'.time()."-".$filename;
+                $path = '../../assets/img/blog/'.time()."-".$filename;
+                move_uploaded_file($filetemp, $path);
+                unlink($_REQUEST['image_file']);
+            } 
+            else {
+                $path = '';
+                $image = "Only Image Accepted.";
+            }
+
+            $data = [
+                'created_by' => $_SESSION['user_login_detail']['id'],
+                'title' => $_REQUEST['title'],
+                'image' => $path,
+                'author' => $_REQUEST['author'],
+                'quote' => $_REQUEST['quote'],
+                'category' => $_REQUEST['category'],
+                'content' => $_REQUEST['content'],
+                'meta_title' => $_REQUEST['meta_title'],
+                'meta_author' => $_REQUEST['meta_author'],
+                'meta_description' => $_REQUEST['meta_description'],
+                'key_words' => $_REQUEST['key_words'],
+                'url' => str_replace(' ', '-', strtolower($_REQUEST['url'])),
+            ];
+
+            if (in_array(null, $data, true) || in_array('', $data, true)) {
+                // There are null (or empty) values.
+            } else {
+                $conditions = ['id' => $_REQUEST['e_id']];
+                $return = update_data('`blog`', $data, $conditions, $conn);
+    
+                if(!empty($return)) {
+                    $message = "<div class='alert alert-success'>Record Updated Successfully.</div>";
+                } else {
+                    $message = "<div class='alert alert-danger'>Something Went Wrong.<br>".$return['error']."</div>";
+                }
+            }
+
+        } else {
+            $data = [
+                'created_by' => $_SESSION['user_login_detail']['id'],
+                'title' => $_REQUEST['title'],
+                'author' => $_REQUEST['author'],
+                'quote' => $_REQUEST['quote'],
+                'category' => $_REQUEST['category'],
+                'content' => $_REQUEST['content'],
+                'meta_title' => $_REQUEST['meta_title'],
+                'meta_author' => $_REQUEST['meta_author'],
+                'meta_description' => $_REQUEST['meta_description'],
+                'key_words' => $_REQUEST['key_words'],
+                'url' => str_replace(' ', '-', strtolower($_REQUEST['url'])),
+            ];
+    
+            if (in_array(null, $data, true) || in_array('', $data, true)) {
+                // There are null (or empty) values.
+            } else {
+                $conditions = ['id' => $_REQUEST['e_id']];
+                $return = update_data('`blog`', $data, $conditions, $conn);
+    
+                if(!empty($return)) {
+                    $message = "<div class='alert alert-success'>Record Updated Successfully.</div>";
+                } else {
+                    $message = "<div class='alert alert-danger'>Something Went Wrong.<br>".$return['error']."</div>";
+                }
+            }
+        }
+    }
+?>
+
+<form action="<?= $_SERVER['PHP_SELF']; ?>" method="post" enctype="multipart/form-data" autocomplete="on">
+    <div class="card card-body rounded bg-white">
+        <div class="card-header">
+            <h3>Blog Data Update</h3>
+            <?= (!empty($message)? $message : ''); ?>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-sm-6">
+                    <div class="form-group">
+                        <label><b>Title: </b></label>
+                        <input type="text" class="form-control" name="title" value="<?= (!empty($return['title'])) ? $return['title'] : '' ?>" placeholder="Title" required>
+                        <small> <?= (!empty($title) ? $title : ''); ?></small>
+                    </div>
+                    <br>
+                </div>
+                
+                <div class="col-sm-6">
+                    <div class="form-group">
+                        <label><b>Image: </b></label>
+                        <input type="file" class="form-control" name="image" accept="image/*">
+                        <img src="<?= (!empty($return['image'])) ? $return['image'] : '' ?>" alt="" width="100" height="75">
+                        <input type="hidden" name="image_file" value="<?= (!empty($return['image'])) ? $return['image'] : '' ?>">
+                        <small> <?= (!empty($image) ? $image : ''); ?></small>
+                    </div>
+                    <br>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-sm-6">
+                    <div class="form-group">
+                        <label><b>Author: </b></label>
+                        <input type="text" class="form-control" name="author" value="<?= (!empty($return['author'])) ? $return['author'] : '' ?>" placeholder="Author" required>
+                        <small> <?= (!empty($author) ? $author : ''); ?></small>
+                    </div>
+                    <br>
+                </div>
+                
+                <div class="col-sm-6">
+                    <div class="form-group">
+                        <label><b>Quote: </b></label>
+                        <input type="text" class="form-control" name="quote" value="<?= (!empty($return['quote'])) ? $return['quote'] : '' ?>" placeholder="Quote"
+                            required>
+                        <small> <?= (!empty($quote) ? $quote : ''); ?></small>
+                    </div>
+                    <br>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-sm-6">
+                    <div class="form-group">
+                        <label><b>Category: </b></label>
+                        <select name="category" class="form-control" value="<?= (!empty($return['category'])) ? $return['category'] : '' ?>" required>
+                            <option value="">Select Category</option>
+                            <option value="PDF" <?= ($return['category'] == 'PDF') ? 'selected' : '' ?>>PDF</option>
+                            <option value="Excel" <?= ($return['category'] == 'Excel') ? 'selected' : '' ?>>Excel</option>
+                            <option value="DOCX" <?= ($return['category'] == 'DOCX') ? 'selected' : '' ?>>DOCX</option>
+                            <option value="PPT" <?= ($return['category'] == 'PPT') ? 'selected' : '' ?>>PPT</option>
+                            <option value="Image" <?= ($return['category'] == 'Image') ? 'selected' : '' ?>>Image</option>
+                            <option value="HTML" <?= ($return['category'] == 'HTML') ? 'selected' : '' ?>>HTML</option>
+                            <option value="ODC" <?= ($return['category'] == 'ODC') ? 'selected' : '' ?>>ODC</option>
+                            <option value="Website" <?= ($return['category'] == 'Website') ? 'selected' : '' ?>>Website</option>
+                            <option value="Compress" <?= ($return['category'] == 'Compress') ? 'selected' : '' ?>>Compress</option>
+                            <option value="Other" <?= ($return['category'] == 'Other') ? 'selected' : '' ?>>Other</option>
+                        </select>
+                        <small> <?= (!empty($category) ? $category : ''); ?></small>
+                    </div>
+                    <br>
+                </div>
+                <div class="col-sm-6">
+                    <div class="form-group">
+                        <label><b>URL: </b></label>
+                        <input type="text" class="form-control" name="url" value="<?= (!empty($return['url'])) ? $return['url'] : '' ?>" placeholder="URL"
+                            required>
+                        <small> <?= (!empty($url) ? $url : ''); ?></small>
+                    </div>
+                    <br>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-sm-12">
+                    <div class="form-group">
+                        <label><b>Content: </b></label>
+                        <textarea rows="4" class="form-control" name="content" placeholder="Content" required><?= (!empty($return['content'])) ? $return['content'] : '' ?></textarea>
+                        <small> <?= (!empty($content) ? $content : ''); ?></small>
+                    </div>
+                    <br>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-sm-6">
+                    <div class="form-group">
+                        <label><b>Meta Title: </b></label>
+                        <input type="text" class="form-control" name="meta_title" value="<?= (!empty($return['meta_title'])) ? $return['meta_title'] : '' ?>" placeholder="Meta Title" required>
+                        <small> <?= (!empty($meta_title) ? $meta_title : ''); ?></small>
+                    </div>
+                    <br>
+                </div>
+                
+                <div class="col-sm-6">
+                    <div class="form-group">
+                        <label><b>Meta Author: </b></label>
+                        <input type="text" class="form-control" name="meta_author" value="<?= (!empty($return['meta_author'])) ? $return['meta_author'] : '' ?>" placeholder="Meta Author"
+                            required>
+                        <small> <?= (!empty($meta_author) ? $meta_author : ''); ?></small>
+                    </div>
+                    <br>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-sm-6">
+                    <div class="form-group">
+                        <label><b>Meta Description: </b></label>
+                        <textarea rows="3" class="form-control" name="meta_description" placeholder="Meta Description" required><?= (!empty($return['meta_description'])) ? $return['meta_description'] : '' ?></textarea>
+                        <small> <?= (!empty($meta_description) ? $meta_description : ''); ?></small>
+                    </div>
+                    <br>
+                </div>
+                <div class="col-sm-6">
+                    <div class="form-group">
+                        <label><b>Key Words: </b></label>
+                        <textarea rows="3" class="form-control" name="key_words" placeholder="Key Words" required><?= (!empty($return['key_words'])) ? $return['key_words'] : '' ?></textarea>
+                        <small> <?= (!empty($key_words) ? $key_words : ''); ?></small>
+                    </div>
+                    <br>
+                </div>
+            </div>
+        </div>
+
+        <!-- <div class="card-body">
+            <div class="row">
+                <div class="col-sm-6">
+                    <div class="form-group">
+                        <label for="exampleInputEmail1"><b>Title: </b></label>
+                        <input type="text" class="form-control" name="title" value="<?= (!empty($return['title'])) ? $return['title'] : '' ?>" placeholder="Title" required>
+                        <small> <?= (!empty($title) ? $title : ''); ?></small>
+                    </div>
+                    <br>
+                </div>
+                
+                <div class="col-sm-6">
+                    <div class="form-group">
+                        <label for="exampleInputEmail1"><b>Accept Type: </b></label>
+                        <input type="text" class="form-control" name="accept" value="<?= (!empty($return['accept'])) ? $return['accept'] : '' ?>" placeholder="Accept Type"
+                            required>
+                        <small> <?= (!empty($accept) ? $accept : ''); ?></small>
+                    </div>
+                    <br>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-sm-6">
+                    <div class="form-group">
+                        <label for="exampleInputEmail1"><b>Accept From: </b></label>
+                        <input type="text" class="form-control" name="from" value="<?= (!empty($return['from'])) ? $return['from'] : '' ?>" placeholder="Accept From" required>
+                        <small> <?= (!empty($from) ? $from : ''); ?></small>
+                    </div>
+                    <br>
+                </div>
+                
+                <div class="col-sm-6">
+                    <div class="form-group">
+                        <label for="exampleInputEmail1"><b>Converted To: </b></label>
+                        <input type="text" class="form-control" name="to" value="<?= (!empty($return['to'])) ? $return['to'] : '' ?>" placeholder="Converted To" required>
+                        <small> <?= (!empty($to) ? $to : ''); ?></small>
+                    </div>
+                    <br>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-sm-6">
+                    <div class="form-group">
+                        <label for="exampleInputEmail1"><b>File Type: </b></label>
+                        <input type="text" class="form-control" name="file_type" value="<?= (!empty($return['file_type'])) ? $return['file_type'] : '' ?>" placeholder="File Type"
+                            required>
+                        <small> <?= (!empty($file_type) ? $file_type : ''); ?></small>
+                    </div>
+                    <br>
+                </div>
+
+                <div class="col-sm-3">
+                    <div class="form-group">
+                        <label for="exampleInputEmail1"><b>Number of File: </b></label>
+                        <select class="form-control" name="multiple" required>
+                            <option value="">Select a Option</option>
+                            <option value="00" <?= ($return['multiple'] == "0") ? 'selected' : '' ?>>Single</option>
+                            <option value="01" <?= ($return['multiple'] == "1") ? 'selected' : '' ?>>Multiple</option>
+                        </select>
+                        <small> <?= (!empty($multiple) ? $multiple : ''); ?></small>
+                    </div>
+                    <br>
+                </div>
+                <div class="col-sm-3">
+                    <div class="form-group">
+                        <label for="exampleInputEmail1"><b>Type: </b></label>
+                        <select class="form-control" name="type" required>
+                            <option value="">Select a Option</option>
+                            <option value="File" <?= ($return['type'] == "File") ? 'selected' : '' ?>>File</option>
+                            <option value="Url" <?= ($return['type'] == "Url") ? 'selected' : '' ?>>Url</option>
+                        </select>
+                        <small> <?= (!empty($type) ? $type : ''); ?></small>
+                    </div>
+                    <br>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-sm-6">
+                    <div class="form-group">
+                        <label><b>Meta Title: </b></label>
+                        <input type="text" class="form-control" name="meta_title" value="<?= (!empty($return['meta_title'])) ? $return['meta_title'] : '' ?>" placeholder="Meta Title" required>
+                        <small> <?= (!empty($meta_title) ? $meta_title : ''); ?></small>
+                    </div>
+                    <br>
+                </div>
+                
+                <div class="col-sm-6">
+                    <div class="form-group">
+                        <label><b>Meta Author: </b></label>
+                        <input type="text" class="form-control" name="meta_author" value="<?= (!empty($return['meta_author'])) ? $return['meta_author'] : '' ?>" placeholder="Meta Author"
+                            required>
+                        <small> <?= (!empty($meta_author) ? $meta_author : ''); ?></small>
+                    </div>
+                    <br>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-sm-6">
+                    <div class="form-group">
+                        <label><b>Description: </b></label>
+                        <textarea rows="3" class="form-control" name="description" placeholder="Description" required>
+                            <?= (!empty($return['description'])) ? $return['description'] : '' ?>
+                        </textarea>
+                        <small> <?= (!empty($description) ? $description : ''); ?></small>
+                    </div>
+                    <br>
+                </div>
+                
+                <div class="col-sm-6">
+                    <div class="form-group">
+                        <label><b>Meta Description: </b></label>
+                        <textarea rows="3" class="form-control" name="meta_description" placeholder="Meta Description"
+                            required>
+                            <?= (!empty($return['meta_description'])) ? $return['meta_description'] : '' ?>
+                        </textarea>
+                        <small> <?= (!empty($meta_description) ? $meta_description : ''); ?></small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-sm-6">
+                    <div class="form-group">
+                        <label><b>Key Words: </b></label>
+                        <textarea rows="2" class="form-control" name="key_words" placeholder="Key Words" required>
+                            <?= (!empty($return['key_words'])) ? $return['key_words'] : '' ?>
+                        </textarea>
+                        <small> <?= (!empty($key_words) ? $key_words : ''); ?></small>
+                    </div>
+                    <br>
+                </div>
+                <div class="col-sm-6">
+                    <div class="form-group">
+                        <label><b>URL: </b></label>
+                        <input type="text" class="form-control" name="url" value="<?= (!empty($return['url'])) ? $return['url'] : '' ?>" placeholder="URL"
+                            required>
+                        <small> <?= (!empty($url) ? $url : ''); ?></small>
+                    </div>
+                    <br>
+                </div>
+            </div>
+        </div> -->
+
+        <div class="card-footer">
+            <div class="row">
+                <div class="col-sm-12">
+                    <div style="float: right;">
+                        <input type="hidden" name="e_id" value="<?= (!empty($return['id'])) ? $return['id'] : '' ?>">
+                        <input type="hidden" id="go_back" value="admin/blog">
+                        <button type="button" class="btn btn-ft border-2 rounded-5 btn-outline-danger"
+                            onClick="history.back();"><b> Back </b></button>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                        <button type="submit" class="btn btn-ft border-2 rounded-5 btn-outline-primary"
+                            name="submit"><b>
+                                Submit </b></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+<?php
+    require_once('../layouts/footer.php');
+?>
